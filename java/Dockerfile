@@ -1,14 +1,12 @@
-FROM maven:3.9-eclipse-temurin-21
-
-RUN apt-get update
-RUN apt-get install -y curl vim git wget unzip htop
-RUN apt-get clean
-
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY . .
+COPY pom.xml .
+RUN mvn -B -q dependency:go-offline
+COPY src ./src
+RUN mvn -B -q package -DskipTests
 
-RUN mvn package
-RUN rm -rf /root/.m2
-
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/target/app.jar app.jar
 EXPOSE 8080
-CMD ["java", "-jar", "target/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
